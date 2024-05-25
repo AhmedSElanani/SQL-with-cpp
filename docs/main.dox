@@ -1,0 +1,46 @@
+/**
+
+\mainpage SQL with Cpp Course
+
+* **-** TODO: brief this project.
+
+## Table of Contents
+
+## Getting Started
+
+## Requirements
+
+## Project Structure
+```
+```
+
+## Installation
+### Install Dependencies
+```
+```
+
+## Building
+To build the ptoject, run the build script:
+```
+$ ./build.sh
+```
+
+Alternatively, you can run the following command in bash:
+```
+$ mkdir build && cd build && cmake .. && make
+```
+
+The configuration via *CMake* can be influenced further by the following options:
+
+* `-DUILD_TESTS=OFF`
+  It disables the build of unit tests as it's enabled by default.
+
+* `-DBUILD_DOCS=OFF`
+  It disables the generation of Doxygen html documentation as it's enabled by default.
+
+## Documentation
+The source code is documented with Doxygen formatted comments, the Doxygen generated documentation in **html** format shall be found under the binaries directory after the build finished successfully.
+
+## Testing
+
+*/
