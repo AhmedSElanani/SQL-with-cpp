@@ -43,7 +43,9 @@ public:
     sqlite3 *dbPtr{nullptr};
     const auto rCode{sqlite3_open(m_db_path.string().c_str(), &dbPtr)};
     if (rCode != SQLITE_OK) {
-      throw std::runtime_error("Failed to open database: ");
+      throw std::runtime_error(
+          std::string{"Failed to open database, sqlite3 error: "} +
+          sqlite3_errstr(rCode));
     }
 
     m_db = std::unique_ptr<sqlite3, Sqlite3Closer>{dbPtr};
