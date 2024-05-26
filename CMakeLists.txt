@@ -5,6 +5,9 @@ set(PROJECT_NAME "SQL-with-Cpp-Course" VERSION 1.0.0)
 
 project(${PROJECT_NAME})
 
+# Find SQLite3 package
+find_package(SQLite3 REQUIRED)
+
 # set target compilation options
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)

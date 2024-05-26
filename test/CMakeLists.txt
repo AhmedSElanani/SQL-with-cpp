@@ -24,7 +24,7 @@ set(CRUD_WRAPPER_TEST_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/CrudWrapper_test.cpp)
 
 # set link libraries
-set(CRUD_WRAPPER_TEST_LINK_LIBRARIES gtest gmock)
+set(CRUD_WRAPPER_TEST_LINK_LIBRARIES gtest gmock sqlite3)
 
 # set include directories
 set(CRUD_WRAPPER_TEST_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
