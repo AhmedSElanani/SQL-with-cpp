@@ -13,6 +13,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSIONS FALSE)
 
+# add compile-time definitions
+add_compile_definitions("PROJECT_ROOT_PATH=\"${PROJECT_SOURCE_DIR}\"")
+
 # add compilation flags
 add_compile_options(
   # stack protection flag
