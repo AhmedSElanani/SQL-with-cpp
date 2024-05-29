@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <memory>
 #include <sqlite3.h>
+#include <string>
+#include <vector>
 
 /// @brief namespace for SQL with c++
 namespace sql_with_cpp {
@@ -51,16 +53,46 @@ public:
     m_db = std::unique_ptr<sqlite3, Sqlite3Closer>{dbPtr};
   }
 
+  /// @brief method to get the columns names in a given table
+  /// @param tableName the name of the table to peek its columns names
+  /// @return a vector of strings that represent name of each column
+  auto peekColumnsNames(std::string const &tableName) const
+      -> std::vector<std::string> {
+    const auto initializeStatementPtr{[&db = m_db, &tableName]() {
+      sqlite3_stmt *stmtPtr{nullptr};
+      constexpr auto useStrLenInternally{-1};
+      constexpr auto pzTailPtr{nullptr};
+
+      sqlite3_prepare_v2(db.get(),
+                         std::string{"SELECT * FROM " + tableName}.c_str(),
+                         useStrLenInternally, &stmtPtr, pzTailPtr);
+
+      return stmtPtr;
+    }};
+
+    std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> stmt{
+        initializeStatementPtr()};
+
+    std::size_t const noOfColumns{
+        static_cast<std::size_t>(sqlite3_column_count(stmt.get()))};
+
+    std::vector<std::string> columnsNames;
+    columnsNames.reserve(noOfColumns);
+
+    for (auto i{0U}; i < noOfColumns; ++i) {
+      columnsNames.emplace_back(
+          sqlite3_column_name(stmt.get(), static_cast<int>(i)));
+    }
+
+    return columnsNames;
+  }
+
 private:
   /// @brief path to the database to connect to
   const std::filesystem::path m_db_path{""};
 
   /// @brief unique pointer that owns the handle to the sqlite3 database
   std::unique_ptr<sqlite3, Sqlite3Closer> m_db{nullptr};
-
-  /// @brief unique pointer that owns the handle to the sqlite3 database
-  ///        statement
-  std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> m_stmt{nullptr};
 };
 
 } // namespace sql_with_cpp
