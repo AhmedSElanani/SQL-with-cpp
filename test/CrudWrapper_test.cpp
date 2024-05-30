@@ -1,8 +1,13 @@
-#include "crud-wrapper/Common.hpp"
-
 #include "crud-wrapper/CrudWrapper.hpp"
 
 #include "gtest/gtest.h"
+
+/// @brief anonymous namespace for needed constants in thus TU
+namespace {
+/// @brief path to the root of this project
+const std::string kprojectRootPath{PROJECT_ROOT_PATH};
+
+} // namespace
 
 /// @brief namespace for arrayAdt_test tests
 namespace sql_with_cpp_test::crudWrapper_test {
@@ -13,14 +18,13 @@ TEST(TestingConstruction, ConstructingCrudWrapper) {
       { CrudWrapper{"/non/existing/path"}; },
       std::filesystem::filesystem_error);
 
-  EXPECT_NO_THROW({ CrudWrapper{common::kprojectRootPath + "/db/album.db"}; });
-  EXPECT_NO_THROW(
-      { CrudWrapper{common::kprojectRootPath + "/db/scratch.db"}; });
-  EXPECT_NO_THROW({ CrudWrapper{common::kprojectRootPath + "/db/world.db"}; });
+  EXPECT_NO_THROW({ CrudWrapper{kprojectRootPath + "/db/album.db"}; });
+  EXPECT_NO_THROW({ CrudWrapper{kprojectRootPath + "/db/scratch.db"}; });
+  EXPECT_NO_THROW({ CrudWrapper{kprojectRootPath + "/db/world.db"}; });
 }
 
 TEST(TestingPeekColumnNames, PeekColumnsNamesOfExistingTablesInAlbumDatabase) {
-  CrudWrapper const db{common::kprojectRootPath + "/db/album.db"};
+  CrudWrapper const db{kprojectRootPath + "/db/album.db"};
   const auto albumnColumnsNames{db.peekColumnsNames("album")};
   const auto expectedAlbumColumnsNames{
       std::vector<std::string>{"id", "title", "artist", "label", "released"}};
@@ -34,7 +38,7 @@ TEST(TestingPeekColumnNames, PeekColumnsNamesOfExistingTablesInAlbumDatabase) {
 
 TEST(TestingPeekColumnNames,
      PeekColumnsNamesOfExistingTablesInScratchDatabase) {
-  CrudWrapper const db{common::kprojectRootPath + "/db/scratch.db"};
+  CrudWrapper const db{kprojectRootPath + "/db/scratch.db"};
   const auto customerColumnsNames{db.peekColumnsNames("customer")};
   const auto expectedCustomerColumnsNames{std::vector<std::string>{
       "id", "name", "address", "city", "state", "zip"}};
@@ -57,7 +61,7 @@ TEST(TestingPeekColumnNames,
 }
 
 TEST(TestingPeekColumnNames, PeekColumnsNamesOfExistingTablesInWorldDatabase) {
-  CrudWrapper const db{common::kprojectRootPath + "/db/world.db"};
+  CrudWrapper const db{kprojectRootPath + "/db/world.db"};
   const auto cityColumnsNames{db.peekColumnsNames("City")};
   const auto expectedCityColumnsNames{std::vector<std::string>{
       "ID", "Name", "CountryCode", "District", "Population"}};
@@ -78,7 +82,7 @@ TEST(TestingPeekColumnNames, PeekColumnsNamesOfExistingTablesInWorldDatabase) {
 }
 
 TEST(TestingPeekColumnNames, PeekColumnsNamesOfNonExistingTables) {
-  CrudWrapper const db{common::kprojectRootPath + "/db/album.db"};
+  CrudWrapper const db{kprojectRootPath + "/db/album.db"};
   const auto columnsNames1{db.peekColumnsNames("nonExistingTable1")};
   const auto columnsNames2{db.peekColumnsNames("nonExistingTable2")};
   const auto columnsNames3{db.peekColumnsNames("nonExistingTable3")};
