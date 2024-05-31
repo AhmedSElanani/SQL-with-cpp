@@ -92,4 +92,74 @@ TEST(TestingPeekColumnNames, PeekColumnsNamesOfNonExistingTables) {
   EXPECT_EQ(columnsNames3, std::vector<std::string>{});
 }
 
+TEST(TestingGetRows, GetRowsOfExistingTablesInAlbumDatabase) {
+  CrudWrapper const db{kprojectRootPath + "/db/album.db"};
+  const auto albumRows{db.getRows("album")};
+  const auto expectedColumnsNames{
+      std::vector<std::string>{"id", "title", "artist", "label", "released"}};
+
+  // check first row which contains columns" names
+  EXPECT_EQ(albumRows[0U], expectedColumnsNames);
+
+  // check other rows in the database
+  const auto expectedFirstRow{std::vector<std::string>{
+      "1", "Two Men with the Blues", "Willie Nelson and Wynton Marsalis",
+      "Blue Note", "2008-07-08"}};
+  EXPECT_EQ(albumRows[1U], expectedFirstRow);
+
+  const auto expectedSixRow{std::vector<std::string>{
+      "17", "Apostrophe", "Frank Zappa", "DiscReet", "1974-04-22"}};
+  EXPECT_EQ(albumRows[6U], expectedSixRow);
+}
+
+TEST(TestingGetRows, GetRowsOfExistingTablesInScratchDatabase) {
+  CrudWrapper const db{kprojectRootPath + "/db/scratch.db"};
+  const auto albumRows{db.getRows("domains")};
+  const auto expectedColumnsNames{
+      std::vector<std::string>{"id", "domain", "description"}};
+
+  // check first row which contains columns" names
+  EXPECT_EQ(albumRows[0U], expectedColumnsNames);
+
+  // check other rows in the database
+  const auto expectedSecondRow{std::vector<std::string>{
+      "4", "lynda.com", "Where you go to learn how to do what you do"}};
+  EXPECT_EQ(albumRows[2U], expectedSecondRow);
+
+  const auto expectedThirdRow{std::vector<std::string>{
+      "5", "google.com", "The place where you go to go to the place"}};
+  EXPECT_EQ(albumRows[3U], expectedThirdRow);
+}
+
+TEST(TestingGetRows, GetRowsOfExistingTablesInWorldDatabase) {
+  CrudWrapper const db{kprojectRootPath + "/db/world.db"};
+  const auto albumRows{db.getRows("CountryLanguage")};
+  const auto expectedColumnsNames{std::vector<std::string>{
+      "CountryCode", "Language", "IsOfficial", "Percentage"}};
+
+  // check first row which contains columns" names
+  EXPECT_EQ(albumRows[0U], expectedColumnsNames);
+
+  // check other rows in the database
+  const auto expectedTwelfthRow{
+      std::vector<std::string>{"ARG", "Spanish", "1", "96.8"}};
+  EXPECT_EQ(albumRows[12U], expectedTwelfthRow);
+
+  const auto expectedFourtyForthRow{
+      std::vector<std::string>{"EGY", "Arabic", "1", "98.8"}};
+  EXPECT_EQ(albumRows[44U], expectedFourtyForthRow);
+}
+
+TEST(TestingGetRows, GetRowsOfNonExistingTables) {
+  CrudWrapper const db{kprojectRootPath + "/db/scratch.db"};
+
+  const auto rows1{db.getRows("nonExistingTable1")};
+  const auto rows2{db.getRows("nonExistingTable2")};
+  const auto rows3{db.getRows("nonExistingTable3")};
+
+  EXPECT_EQ(rows1, std::vector<std::vector<std::string>>{{}});
+  EXPECT_EQ(rows2, std::vector<std::vector<std::string>>{{}});
+  EXPECT_EQ(rows3, std::vector<std::vector<std::string>>{{}});
+}
+
 } // namespace sql_with_cpp_test::crudWrapper_test

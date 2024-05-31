@@ -60,6 +60,45 @@ public:
       -> std::vector<std::string> {
     return getColumnsNamesFromStatement(selectAllFromTableStatement(tableName));
   }
+
+  /// @brief a method to read all the rows in the given table, where the first
+  ///        row represents the columns names
+  /// @param tableName the name of the table to read all of its rows
+  /// @return a vector of vector of strings, where each outer vector represents
+  ///         a row, and the internal vector represents the data in the
+  ///         respective row
+  /// @note as mentioned above, the first row represents the column names, so
+  ///       the actual data starts from index: 1
+  auto getRows(std::string const &tableName) const
+      -> std::vector<std::vector<std::string>> {
+    std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> stmt{
+        selectAllFromTableStatement(tableName)};
+
+    std::vector<std::vector<std::string>> rows;
+
+    // where first row shall be the columns names
+    rows.emplace_back(getColumnsNamesFromStatement(stmt));
+
+    // read and emplace remaining rows
+    const auto noOfColumns{rows[0].size()};
+    while (sqlite3_step(stmt.get()) == SQLITE_ROW) {
+      std::vector<std::string> rowElements;
+      rowElements.reserve(noOfColumns);
+
+      for (auto i{0U}; i < noOfColumns; ++i) {
+        rowElements.emplace_back(
+            reinterpret_cast<const char *>( // had to because
+                                            // sqlite3_column_text API returns
+                                            // const unsigned char* instead
+                sqlite3_column_text(stmt.get(), static_cast<int>(i))));
+      }
+
+      rows.emplace_back(std::move(rowElements));
+    }
+
+    return rows;
+  }
+
 private:
   /// @brief path to the database to connect to
   const std::filesystem::path m_db_path{""};
