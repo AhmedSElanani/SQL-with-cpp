@@ -58,7 +58,27 @@ public:
   /// @return a vector of strings that represent name of each column
   auto peekColumnsNames(std::string const &tableName) const
       -> std::vector<std::string> {
+    return getColumnsNamesFromStatement(selectAllFromTableStatement(tableName));
+  }
+private:
+  /// @brief path to the database to connect to
+  const std::filesystem::path m_db_path{""};
+
+  /// @brief unique pointer that owns the handle to the sqlite3 database
+  std::unique_ptr<sqlite3, Sqlite3Closer> m_db{nullptr};
+
+  /// @brief private method to prepare select all from statement on a table
+  ///        given its name, and returns its statement pointer wrapped in a
+  ///        unique pointer
+  /// @param tableName the name of the table to prepare the statement for
+  /// @return unique pointer to the statement prepared
+  auto selectAllFromTableStatement(std::string const &tableName) const noexcept
+      -> std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> {
     const auto initializeStatementPtr{[&db = m_db, &tableName]() {
+      if (db == nullptr) {
+        return static_cast<sqlite3_stmt *>(nullptr);
+      }
+
       sqlite3_stmt *stmtPtr{nullptr};
       constexpr auto useStrLenInternally{-1};
       constexpr auto pzTailPtr{nullptr};
@@ -73,6 +93,20 @@ public:
     std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> stmt{
         initializeStatementPtr()};
 
+    return stmt;
+  }
+
+  /// @brief a private method to read and return each column name in a given
+  ///        prepared statement
+  /// @param stmt unique pointer to prepared statement
+  /// @return vector of names to each column from the prepared statement
+  auto getColumnsNamesFromStatement(
+      std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> const &stmt)
+      const noexcept -> std::vector<std::string> {
+    if (stmt == nullptr) {
+      return {};
+    }
+
     std::size_t const noOfColumns{
         static_cast<std::size_t>(sqlite3_column_count(stmt.get()))};
 
@@ -86,13 +120,6 @@ public:
 
     return columnsNames;
   }
-
-private:
-  /// @brief path to the database to connect to
-  const std::filesystem::path m_db_path{""};
-
-  /// @brief unique pointer that owns the handle to the sqlite3 database
-  std::unique_ptr<sqlite3, Sqlite3Closer> m_db{nullptr};
 };
 
 } // namespace sql_with_cpp
