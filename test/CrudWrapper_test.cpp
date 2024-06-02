@@ -1,6 +1,7 @@
 #include "crud-wrapper/CrudWrapper.hpp"
 
 #include "gtest/gtest.h"
+#include <format>
 
 /// @brief anonymous namespace for needed constants in thus TU
 namespace {
@@ -160,6 +161,49 @@ TEST(TestingGetRows, GetRowsOfNonExistingTables) {
   EXPECT_EQ(rows1, std::vector<std::vector<std::string>>{{}});
   EXPECT_EQ(rows2, std::vector<std::vector<std::string>>{{}});
   EXPECT_EQ(rows3, std::vector<std::vector<std::string>>{{}});
+}
+
+TEST(TestingExecuteQuery, CreateReadAndDropTablesInAlbumDatabase) {
+  CrudWrapper db{kprojectRootPath + "/db/album.db"};
+
+  auto const newTableName{std::string{"newTable"}};
+
+  // check the table doesn't exist at the beggining
+  EXPECT_EQ(db.getRows(newTableName),
+            std::vector<std::vector<std::string>>{{}});
+
+  // create the new table
+  auto const tableCreationStatements{std::format(
+      "DROP TABLE IF EXISTS {};"
+      "BEGIN;"
+      "CREATE TABLE IF NOT EXISTS {} "
+      "(column1 TEXT, column2 TEXT, column3 TEXT);"
+      "INSERT INTO {} VALUES ('r1c1', 'r1c2','r1c3');"
+      "INSERT INTO {} VALUES('r2c1', 'r2c2', 'r2c3');"
+      "INSERT INTO {} VALUES('r3c1', 'r3c2', 'r3c3');"
+      "COMMIT;",
+      newTableName, newTableName, newTableName, newTableName, newTableName)};
+
+  EXPECT_TRUE(db.executeStatements(tableCreationStatements));
+
+  // read the content of the newly created table
+  auto const newTableRows{db.getRows(newTableName)};
+  auto const expectedNewTableRows{
+      std::vector<std::vector<std::string>>{{"column1", "column2", "column3"},
+                                            {"r1c1", "r1c2", "r1c3"},
+                                            {"r2c1", "r2c2", "r2c3"},
+                                            {"r3c1", "r3c2", "r3c3"}}};
+  EXPECT_EQ(newTableRows, expectedNewTableRows);
+
+  // drop the newly created table
+  const std::string tableDroppingStatements{
+      std::format("DROP TABLE IF EXISTS {};", newTableName)};
+
+  EXPECT_TRUE(db.executeStatements(tableDroppingStatements));
+
+  // check the table no longer exists after dropping statement
+  EXPECT_EQ(db.getRows(newTableName),
+            std::vector<std::vector<std::string>>{{}});
 }
 
 } // namespace sql_with_cpp_test::crudWrapper_test

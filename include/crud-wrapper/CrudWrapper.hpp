@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ICruddable.hpp"
 #include <concepts>
 #include <exception>
 #include <filesystem>
@@ -8,6 +7,8 @@
 #include <sqlite3.h>
 #include <string>
 #include <vector>
+
+#include "ICruddable.hpp"
 
 /// @brief namespace for SQL with c++
 namespace sql_with_cpp {
@@ -43,7 +44,7 @@ public:
     }
 
     sqlite3 *dbPtr{nullptr};
-    const auto rCode{sqlite3_open(m_db_path.string().c_str(), &dbPtr)};
+    const int rCode{sqlite3_open(m_db_path.string().c_str(), &dbPtr)};
     if (rCode != SQLITE_OK) {
       throw std::runtime_error(
           std::string{"Failed to open database, sqlite3 error: "} +
@@ -97,6 +98,23 @@ public:
     }
 
     return rows;
+  }
+
+  /// @brief a method to execute multiple statements that don't have a SELECT
+  ///        statement as one of them (e.g CREATE, DROP, .. etc)
+  /// @param statements the SQL statements to be executed
+  /// @return true if statements were executed successfully, false otherwise
+  /// @note callback is not used here as it could get very complex quickly,
+  ///       there are more straight forward alternatives instead
+  auto executeStatements(std::string const &statements) noexcept -> bool {
+    constexpr auto callback{nullptr};
+    constexpr auto callbackFirstArg{nullptr};
+    constexpr auto errMsg{nullptr};
+
+    const int rcode{sqlite3_exec(m_db.get(), statements.c_str(), callback,
+                                 callbackFirstArg, errMsg)};
+
+    return {rcode == SQLITE_OK};
   }
 
 private:
