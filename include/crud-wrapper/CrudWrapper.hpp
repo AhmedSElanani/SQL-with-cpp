@@ -61,7 +61,8 @@ public:
   /// @return a vector of strings that represent name of each column
   auto peekColumnsNames(std::string const &tableName) const
       -> std::vector<std::string> {
-    return getColumnsNamesFromStatement(selectAllFromTableStatement(tableName));
+    return getColumnsNamesFromStatement(
+        buildSelectAllFromTableStatement(tableName));
   }
 
   /// @brief a method to read all the rows in the given table, where the first
@@ -74,31 +75,8 @@ public:
   ///       the actual data starts from index: 1
   auto getRows(std::string const &tableName) const
       -> std::vector<std::vector<std::string>> {
-    Stmt_Ptr_type stmt{selectAllFromTableStatement(tableName)};
-
-    std::vector<std::vector<std::string>> rows;
-
-    // where first row shall be the columns names
-    rows.emplace_back(getColumnsNamesFromStatement(stmt));
-
-    // read and emplace remaining rows
-    const auto noOfColumns{rows[0].size()};
-    while (sqlite3_step(stmt.get()) == SQLITE_ROW) {
-      std::vector<std::string> rowElements;
-      rowElements.reserve(noOfColumns);
-
-      for (auto i{0U}; i < noOfColumns; ++i) {
-        rowElements.emplace_back(
-            reinterpret_cast<const char *>( // had to because
-                                            // sqlite3_column_text API returns
-                                            // const unsigned char* instead
-                sqlite3_column_text(stmt.get(), static_cast<int>(i))));
-      }
-
-      rows.emplace_back(std::move(rowElements));
-    }
-
-    return rows;
+    return getRowsFromStatement(buildSelectAllFromTableStatement(tableName));
+  }
   }
 
   /// @brief a method to execute multiple statements that don't have a SELECT
@@ -125,13 +103,13 @@ private:
   /// @brief unique pointer that owns the handle to the sqlite3 database
   std::unique_ptr<sqlite3, Sqlite3Closer> m_db{nullptr};
 
-  /// @brief private method to prepare select all from statement on a table
+  /// @brief private method to build select all from statement on a table
   ///        given its name, and returns its statement pointer wrapped in a
   ///        unique pointer
   /// @param tableName the name of the table to prepare the statement for
   /// @return unique pointer to the statement prepared
-  auto selectAllFromTableStatement(std::string const &tableName) const noexcept
-      -> Stmt_Ptr_type {
+  auto buildSelectAllFromTableStatement(
+      std::string const &tableName) const noexcept -> Stmt_Ptr_type {
     return initializeStatement(
         std::string{"SELECT * FROM " + tableName}.c_str(), m_db);
   }
@@ -179,6 +157,36 @@ private:
     }
 
     return columnsNames;
+  }
+
+  /// @brief a private method to return all the rows given the statement passed
+  /// @param stmt a unique pointer to sqlite3 prepared statement
+  /// @return vector of vector of strings representing the results
+  auto getRowsFromStatement(Stmt_Ptr_type const &stmt) const noexcept
+      -> std::vector<std::vector<std::string>> {
+    std::vector<std::vector<std::string>> rows;
+
+    // where first row shall be the columns names
+    rows.emplace_back(getColumnsNamesFromStatement(stmt));
+
+    // read and emplace remaining rows
+    const auto noOfColumns{rows[0].size()};
+    while (sqlite3_step(stmt.get()) == SQLITE_ROW) {
+      std::vector<std::string> rowElements;
+      rowElements.reserve(noOfColumns);
+
+      for (auto i{0U}; i < noOfColumns; ++i) {
+        rowElements.emplace_back(
+            reinterpret_cast<const char *>( // had to because
+                                            // sqlite3_column_text API returns
+                                            // const unsigned char* instead
+                sqlite3_column_text(stmt.get(), static_cast<int>(i))));
+      }
+
+      rows.emplace_back(std::move(rowElements));
+    }
+
+    return rows;
   }
 };
 
