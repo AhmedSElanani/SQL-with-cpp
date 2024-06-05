@@ -26,6 +26,8 @@ class CrudWrapper : public ICruddable {
     void operator()(sqlite3_stmt *p) const { sqlite3_finalize(p); }
   };
 
+  /// @brief a type alias for sqlite3 statement unique pointer type used
+  using Stmt_Ptr_type = std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser>;
 public:
   /// @brief deleted default constructor for allowing only construction when
   ///        passing a path to the database
@@ -72,8 +74,7 @@ public:
   ///       the actual data starts from index: 1
   auto getRows(std::string const &tableName) const
       -> std::vector<std::vector<std::string>> {
-    std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> stmt{
-        selectAllFromTableStatement(tableName)};
+    Stmt_Ptr_type stmt{selectAllFromTableStatement(tableName)};
 
     std::vector<std::vector<std::string>> rows;
 
@@ -130,36 +131,38 @@ private:
   /// @param tableName the name of the table to prepare the statement for
   /// @return unique pointer to the statement prepared
   auto selectAllFromTableStatement(std::string const &tableName) const noexcept
-      -> std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> {
-    const auto initializeStatementPtr{[&db = m_db, &tableName]() {
-      if (db == nullptr) {
-        return static_cast<sqlite3_stmt *>(nullptr);
-      }
+      -> Stmt_Ptr_type {
+    return initializeStatement(
+        std::string{"SELECT * FROM " + tableName}.c_str(), m_db);
+  }
 
-      sqlite3_stmt *stmtPtr{nullptr};
-      constexpr auto useStrLenInternally{-1};
-      constexpr auto pzTailPtr{nullptr};
+  /// @brief a private static class method for preparing statements
+  /// @param statement the statement to be prepared
+  /// @param db the database for which the statement need to be prepared
+  /// @return a unique pointer to the prepared statement
+  static auto initializeStatement(std::string const &statement,
+                                  std::unique_ptr<sqlite3, Sqlite3Closer> const
+                                      &db) noexcept -> Stmt_Ptr_type {
+    if (db == nullptr) {
+      return static_cast<Stmt_Ptr_type>(nullptr);
+    }
 
-      sqlite3_prepare_v2(db.get(),
-                         std::string{"SELECT * FROM " + tableName}.c_str(),
-                         useStrLenInternally, &stmtPtr, pzTailPtr);
+    sqlite3_stmt *stmtPtr{nullptr};
+    constexpr auto useStrLenInternally{-1};
+    constexpr auto pzTailPtr{nullptr};
 
-      return stmtPtr;
-    }};
+    sqlite3_prepare_v2(db.get(), statement.c_str(), useStrLenInternally,
+                       &stmtPtr, pzTailPtr);
 
-    std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> stmt{
-        initializeStatementPtr()};
-
-    return stmt;
+    return Stmt_Ptr_type{stmtPtr};
   }
 
   /// @brief a private method to read and return each column name in a given
   ///        prepared statement
   /// @param stmt unique pointer to prepared statement
   /// @return vector of names to each column from the prepared statement
-  auto getColumnsNamesFromStatement(
-      std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser> const &stmt)
-      const noexcept -> std::vector<std::string> {
+  auto getColumnsNamesFromStatement(Stmt_Ptr_type const &stmt) const noexcept
+      -> std::vector<std::string> {
     if (stmt == nullptr) {
       return {};
     }
