@@ -31,6 +31,67 @@ class CrudWrapper : public ICruddable {
 
   /// @brief a type alias for sqlite3 statement unique pointer type used
   using Stmt_Ptr_type = std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser>;
+
+  /// @brief a class that represents prepared statements in SQLite3 for
+  ///        rebinding and reusability
+  class PreparedStatement {
+  public:
+    /// @brief deleted default constructor for allowing only construction with
+    ///        the specified parameters
+    /// @note this is the default behavior since a parametrized constructor is
+    ///       already defined, but this is just for explicitly, and
+    ///       defensiveness
+    PreparedStatement() = delete;
+
+    /// @brief parametrized constructor to PreparedStatement class that takes
+    ///        the SQL statement and reference to a cruddableObject object to
+    ///        access its underlying database
+    /// @param statement the statement to be prepared
+    /// @param cruddableObject the object that wraps the database for which the
+    ///                        statement is prepared
+    PreparedStatement(std::string const &statement,
+                      CrudWrapper const &crudWrapperObj) noexcept
+        : m_stmt{initializeStatement(statement, crudWrapperObj.m_db)} {}
+
+    /// @brief method to bind text to placeholder parameters according to sqlite
+    ///        syntax
+    /// @param text text to bind
+    /// @param position position of placeholder to bind that text to
+    /// @return true if binding text was successful, false otherwise
+    auto bindText(std::string const &text,
+                  std::size_t position) noexcept -> bool {
+      if (m_stmt == nullptr) {
+        return false;
+      }
+
+      constexpr auto useStrLenInternally{-1};
+      const int rCode{sqlite3_bind_text(
+          m_stmt.get(), static_cast<int>(position), text.c_str(),
+          useStrLenInternally,
+          // Very important note for below parameter:
+          // I faced errors with ASAN when using SQLITE_STATIC
+          // instead of SQLITE_TRANSIENT
+          // SQLITE_TRANSIENT tells SQLite to copy the string
+          // while SQLITE_STATIC means you guarantee that the string will be
+          // valid until after the query is executed, which might not be the
+          // case when using std::string::c_str()
+          // So, it might be better to play it safe with this parameter
+          SQLITE_TRANSIENT)};
+
+      return {rCode == SQLITE_OK};
+    }
+
+    /// @brief method to return immutable reference to the underlying statement
+    ///        pointer, which could be useful for compatibility with other APIs
+    ///        implemented
+    /// @return const reference to the underlying unique pointer to statement
+    Stmt_Ptr_type const &get() const { return m_stmt; }
+
+  private:
+    /// @brief unique pointer to the underlying sqlite3 statement object
+    Stmt_Ptr_type m_stmt{nullptr};
+  };
+
 public:
   /// @brief deleted default constructor for allowing only construction when
   ///        passing a path to the database
