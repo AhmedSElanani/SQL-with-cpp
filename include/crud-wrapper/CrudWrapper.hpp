@@ -64,6 +64,12 @@ class CrudWrapper : public ICruddable {
         return false;
       }
 
+      if (m_boundToText) {
+        // reset is necessary before calling bind() in case of rebinding with
+        // new parameter
+        sqlite3_reset(m_stmt.get());
+      }
+
       constexpr auto useStrLenInternally{-1};
       const int rCode{sqlite3_bind_text(
           m_stmt.get(), static_cast<int>(position), text.c_str(),
@@ -78,7 +84,8 @@ class CrudWrapper : public ICruddable {
           // So, it might be better to play it safe with this parameter
           SQLITE_TRANSIENT)};
 
-      return {rCode == SQLITE_OK};
+      m_boundToText = {rCode == SQLITE_OK};
+      return m_boundToText;
     }
 
     /// @brief method to return immutable reference to the underlying statement
@@ -90,6 +97,12 @@ class CrudWrapper : public ICruddable {
   private:
     /// @brief unique pointer to the underlying sqlite3 statement object
     Stmt_Ptr_type m_stmt{nullptr};
+
+    /// @brief a boolean instance member to keep track of whether the prepared
+    ///        statement was bound before or not.
+    ///        It becomes necessary to keep track of this info when rebinding
+    ///        placeholder parameters to new values.
+    bool m_boundToText{false};
   };
 
 public:

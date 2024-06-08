@@ -311,5 +311,39 @@ TEST(TestingPreparingStatements, PrepareAndBindMultipleText) {
   }
 }
 
+TEST(TestingPreparingStatements, RebindValidStatements) {
+  CrudWrapper const db{kprojectRootPath + "/db/scratch.db"};
+
+  auto preparedStatement{
+      db.prepareStatement(std::string{"SELECT * FROM sale WHERE price > ? "})};
+
+  ASSERT_TRUE(preparedStatement.bindText("500", 1U));
+
+  {
+    const auto queryResult{db.getRows(preparedStatement)};
+    auto const expectedQueryResult{std::vector<std::vector<std::string>>{
+        {"id", "item_id", "customer_id", "date", "quantity", "price"},
+        {"1", "1", "2", "2009-02-27", "3", "2995"},
+        {"2", "2", "2", "2009-02-27", "1", "1995"},
+        {"3", "1", "1", "2009-02-28", "1", "2995"},
+        {"4", "4", "3", "2009-02-28", "2", "999"},
+        {"5", "1", "2", "2009-02-28", "1", "2995"}}};
+
+    EXPECT_EQ(queryResult, expectedQueryResult);
+  }
+
+  ASSERT_TRUE(preparedStatement.bindText("2500", 1U));
+
+  {
+    const auto queryResult{db.getRows(preparedStatement)};
+    auto const expectedQueryResult{std::vector<std::vector<std::string>>{
+        {"id", "item_id", "customer_id", "date", "quantity", "price"},
+        {"1", "1", "2", "2009-02-27", "3", "2995"},
+        {"3", "1", "1", "2009-02-28", "1", "2995"},
+        {"5", "1", "2", "2009-02-28", "1", "2995"}}};
+
+    EXPECT_EQ(queryResult, expectedQueryResult);
+  }
+}
 
 } // namespace sql_with_cpp_test::crudWrapper_test
