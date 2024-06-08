@@ -26,6 +26,9 @@ class CrudWrapper : public ICruddable {
     void operator()(sqlite3_stmt *p) const { sqlite3_finalize(p); }
   };
 
+  /// @brief a type alias for sqlite3 database unique pointer type used
+  using Db_Ptr_type = std::unique_ptr<sqlite3, Sqlite3Closer>;
+
   /// @brief a type alias for sqlite3 statement unique pointer type used
   using Stmt_Ptr_type = std::unique_ptr<sqlite3_stmt, Sqlite3StmtCloser>;
 public:
@@ -53,7 +56,7 @@ public:
           sqlite3_errstr(rCode));
     }
 
-    m_db = std::unique_ptr<sqlite3, Sqlite3Closer>{dbPtr};
+    m_db = Db_Ptr_type{dbPtr};
   }
 
   /// @brief method to get the columns names in a given table
@@ -101,7 +104,7 @@ private:
   const std::filesystem::path m_db_path{""};
 
   /// @brief unique pointer that owns the handle to the sqlite3 database
-  std::unique_ptr<sqlite3, Sqlite3Closer> m_db{nullptr};
+  Db_Ptr_type m_db{nullptr};
 
   /// @brief private method to build select all from statement on a table
   ///        given its name, and returns its statement pointer wrapped in a
@@ -118,9 +121,9 @@ private:
   /// @param statement the statement to be prepared
   /// @param db the database for which the statement need to be prepared
   /// @return a unique pointer to the prepared statement
-  static auto initializeStatement(std::string const &statement,
-                                  std::unique_ptr<sqlite3, Sqlite3Closer> const
-                                      &db) noexcept -> Stmt_Ptr_type {
+  static auto
+  initializeStatement(std::string const &statement,
+                      Db_Ptr_type const &db) noexcept -> Stmt_Ptr_type {
     if (db == nullptr) {
       return static_cast<Stmt_Ptr_type>(nullptr);
     }
