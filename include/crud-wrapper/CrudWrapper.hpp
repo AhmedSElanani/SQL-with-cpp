@@ -120,6 +120,15 @@ public:
     m_db = Db_Ptr_type{dbPtr};
   }
 
+  /// @brief a class method that returns a prepared statement object based on
+  ///        the passed statement parameter for reusability
+  /// @param statement the statement to be prepared
+  /// @return a prepared statement object based on the passed statement
+  auto prepareStatement(std::string const &statement) const noexcept
+      -> PreparedStatement {
+    return PreparedStatement{statement, *this};
+  }
+
   /// @brief method to get the columns names in a given table
   /// @param tableName the name of the table to peek its columns names
   /// @return a vector of strings that represent name of each column
@@ -141,6 +150,15 @@ public:
       -> std::vector<std::vector<std::string>> {
     return getRowsFromStatement(buildSelectAllFromTableStatement(tableName));
   }
+
+  /// @brief an overload to getRows method that takes prepared statement
+  /// @param statement prepared statement object
+  /// @return a vector of vector of strings, where each outer vector represents
+  ///         a row, and the internal vector represents the data in the
+  ///         respective row
+  auto getRows(PreparedStatement const &statement) const
+      -> std::vector<std::vector<std::string>> {
+    return getRowsFromStatement(statement.get());
   }
 
   /// @brief a method to execute multiple statements that don't have a SELECT
