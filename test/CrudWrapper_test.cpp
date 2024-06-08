@@ -206,4 +206,110 @@ TEST(TestingExecuteQuery, CreateReadAndDropTablesInAlbumDatabase) {
             std::vector<std::vector<std::string>>{{}});
 }
 
+TEST(TestingPreparingStatements, PrepareAndBindValidStatements) {
+  CrudWrapper const db{kprojectRootPath + "/db/world.db"};
+
+  EXPECT_TRUE(
+      db.prepareStatement(std::string{"SELECT * FROM City WHERE Name = ? "})
+          .bindText("Berlin", 1U));
+
+  EXPECT_TRUE(
+      db.prepareStatement(std::string{"SELECT * FROM Country WHERE Name = ? "})
+          .bindText("Germany", 1U));
+
+  EXPECT_TRUE(
+      db.prepareStatement(std::string{"SELECT * FROM Country WHERE Name = ? "})
+          .bindText("NonExistingEntry", 1U));
+}
+
+TEST(TestingPreparingStatements, PrepareAndBindInvalidStatements) {
+  CrudWrapper const db{kprojectRootPath + "/db/scratch.db"};
+
+  EXPECT_FALSE(
+      db.prepareStatement(
+            std::string{"SELECT * FROM track WHERE NonExistingColumn = ? "})
+          .bindText("NonExistingEntry", 1U));
+
+  EXPECT_FALSE(
+      db.prepareStatement(
+            std::string{"SELECT * FROM NonExistingTable WHERE title = ? "})
+          .bindText("NonExistingEntry", 1U));
+}
+
+TEST(TestingPreparingStatements, PrepareBindAndUseValidStatements) {
+  CrudWrapper const db{kprojectRootPath + "/db/scratch.db"};
+
+  {
+    auto preparedStatement{db.prepareStatement(
+        std::string{"SELECT * FROM sale WHERE price > ? "})};
+
+    ASSERT_TRUE(preparedStatement.bindText("2000", 1U));
+
+    const auto queryResult{db.getRows(preparedStatement)};
+    auto const expectedQueryResult{std::vector<std::vector<std::string>>{
+        {"id", "item_id", "customer_id", "date", "quantity", "price"},
+        {"1", "1", "2", "2009-02-27", "3", "2995"},
+        {"3", "1", "1", "2009-02-28", "1", "2995"},
+        {"5", "1", "2", "2009-02-28", "1", "2995"}}};
+
+    EXPECT_EQ(queryResult, expectedQueryResult);
+  }
+
+  {
+    auto preparedStatement{
+        db.prepareStatement(std::string{"SELECT * FROM sale WHERE date = ? "})};
+
+    ASSERT_TRUE(preparedStatement.bindText("2009-02-28", 1U));
+
+    const auto queryResult{db.getRows(preparedStatement)};
+    auto const expectedQueryResult{std::vector<std::vector<std::string>>{
+        {"id", "item_id", "customer_id", "date", "quantity", "price"},
+        {"3", "1", "1", "2009-02-28", "1", "2995"},
+        {"4", "4", "3", "2009-02-28", "2", "999"},
+        {"5", "1", "2", "2009-02-28", "1", "2995"}}};
+
+    EXPECT_EQ(queryResult, expectedQueryResult);
+  }
+}
+
+TEST(TestingPreparingStatements, PrepareAndBindMultipleText) {
+  CrudWrapper const db{kprojectRootPath + "/db/album.db"};
+
+  {
+    auto preparedStatement{db.prepareStatement(std::string{
+        "SELECT * FROM track WHERE track_number = ? AND duration > ?"})};
+
+    ASSERT_TRUE(preparedStatement.bindText("10", 1U));
+    ASSERT_TRUE(preparedStatement.bindText("140", 2U));
+
+    const auto queryResult{db.getRows(preparedStatement)};
+    auto const expectedQueryResult{std::vector<std::vector<std::string>>{
+        {"id", "album_id", "title", "track_number", "duration"},
+        {"10", "1", "That's All", "10", "368"},
+        {"31", "12", "I'm Looking Through You", "10", "147"}}};
+
+    EXPECT_EQ(queryResult, expectedQueryResult);
+  }
+
+  {
+    auto preparedStatement{
+        db.prepareStatement(std::string{"SELECT * FROM track WHERE title LIKE "
+                                        "? AND duration BETWEEN ? AND ? "})};
+
+    ASSERT_TRUE(preparedStatement.bindText("%you%", 1U));
+    ASSERT_TRUE(preparedStatement.bindText("130", 2U));
+    ASSERT_TRUE(preparedStatement.bindText("200", 3U));
+
+    const auto queryResult{db.getRows(preparedStatement)};
+    auto const expectedQueryResult{std::vector<std::vector<std::string>>{
+        {"id", "album_id", "title", "track_number", "duration"},
+        {"26", "12", "Think for Yourself", "5", "139"},
+        {"31", "12", "I'm Looking Through You", "10", "147"},
+        {"35", "12", "Run for Your Life", "14", "138"}}};
+
+    EXPECT_EQ(queryResult, expectedQueryResult);
+  }
+}
+
+
 } // namespace sql_with_cpp_test::crudWrapper_test
