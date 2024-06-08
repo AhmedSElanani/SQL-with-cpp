@@ -29,5 +29,13 @@ search_and_run_executables() {
     done
 }
 
+# clean up the database directory after execution
+clean_up_database_directory() {
+    git restore db
+}
+
 # Start the search from the specified directory
 search_and_run_executables "$start_directory"
+
+# clean up after execution
+clean_up_database_directory
