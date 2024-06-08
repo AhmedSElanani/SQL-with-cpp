@@ -142,25 +142,18 @@ public:
     return PreparedStatement{statement, *this};
   }
 
-  /// @brief method to get the columns names in a given table
-  /// @param tableName the name of the table to peek its columns names
-  /// @return a vector of strings that represent name of each column
+  /// @brief implementation for the interface method
+  /// @note for further info, check the interface documentation
   auto peekColumnsNames(std::string const &tableName) const
-      -> std::vector<std::string> {
+      -> std::vector<std::string> override {
     return getColumnsNamesFromStatement(
         buildSelectAllFromTableStatement(tableName));
   }
 
-  /// @brief a method to read all the rows in the given table, where the first
-  ///        row represents the columns names
-  /// @param tableName the name of the table to read all of its rows
-  /// @return a vector of vector of strings, where each outer vector represents
-  ///         a row, and the internal vector represents the data in the
-  ///         respective row
-  /// @note as mentioned above, the first row represents the column names, so
-  ///       the actual data starts from index: 1
+  /// @brief implementation for the interface method
+  /// @note for further info, check the interface documentation
   auto getRows(std::string const &tableName) const
-      -> std::vector<std::vector<std::string>> {
+      -> std::vector<std::vector<std::string>> override {
     return getRowsFromStatement(buildSelectAllFromTableStatement(tableName));
   }
 
@@ -174,13 +167,10 @@ public:
     return getRowsFromStatement(statement.get());
   }
 
-  /// @brief a method to execute multiple statements that don't have a SELECT
-  ///        statement as one of them (e.g CREATE, DROP, .. etc)
-  /// @param statements the SQL statements to be executed
-  /// @return true if statements were executed successfully, false otherwise
-  /// @note callback is not used here as it could get very complex quickly,
-  ///       there are more straight forward alternatives instead
-  auto executeStatements(std::string const &statements) noexcept -> bool {
+  /// @brief implementation for the interface method
+  /// @note for further info, check the interface documentation
+  auto
+  executeStatements(std::string const &statements) noexcept -> bool override {
     constexpr auto callback{nullptr};
     constexpr auto callbackFirstArg{nullptr};
     constexpr auto errMsg{nullptr};
